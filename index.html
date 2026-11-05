@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Random Password Generator | Decodelabs Project 3</title>
+<meta name="description" content="Generate a random, complex password of any length using letters, numbers and symbols. Runs entirely in your browser.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔐</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --mint: #c9f5dc;
+    --sky: #9fc4f5;
+    --sage: #4d7a52;
+    --sage-deep: #2f5237;
+    --leaf: #a9c98f;
+    --cream: #f4f1e4;
+    --orange: #e8803a;
+    --card: rgba(255, 255, 255, 0.72);
+    --ink: #1f3324;
+    --ink-soft: #46604b;
+    --line: rgba(47, 82, 55, 0.25);
+    --field: #ffffff;
+    --weak: #d9534f;
+    --mid: #e8a33a;
+    --strong: #3f9b5a;
+    --font-display: "Syne", "Trebuchet MS", system-ui, sans-serif;
+    --font-mono: "DM Mono", ui-monospace, "Courier New", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --mint: #17322a;
+      --sky: #1d3156;
+      --sage: #8fc197;
+      --sage-deep: #b9e0bf;
+      --leaf: #35533a;
+      --cream: #26332b;
+      --card: rgba(18, 30, 24, 0.78);
+      --ink: #e6f3e8;
+      --ink-soft: #a9c4ae;
+      --line: rgba(185, 224, 191, 0.28);
+      --field: #101c15;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { height: 100%; }
+  body {
+    margin: 0;
+    min-height: 100%;
+    font-family: var(--font-mono);
+    color: var(--ink);
+    background: linear-gradient(115deg, var(--mint), var(--sky));
+    background-attachment: fixed;
+    display: grid;
+    place-items: center;
+    padding: 24px 16px;
+    position: relative;
+    overflow-x: hidden;
+  }
+  /* soft blobs echo the project slide */
+  body::before, body::after {
+    content: "";
+    position: fixed;
+    z-index: 0;
+    pointer-events: none;
+  }
+  body::before {
+    width: 46vmax; height: 46vmax;
+    top: -18vmax; left: -14vmax;
+    background: var(--leaf);
+    border-radius: 58% 42% 63% 37% / 44% 55% 45% 56%;
+    opacity: .75;
+  }
+  body::after {
+    width: 40vmax; height: 40vmax;
+    right: -14vmax; bottom: -16vmax;
+    background: var(--cream);
+    border-radius: 45% 55% 40% 60% / 55% 40% 60% 45%;
+    opacity: .85;
+  }
+  main {
+    position: relative;
+    z-index: 1;
+    width: min(560px, 100%);
+    background: var(--card);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    padding: clamp(22px, 5vw, 36px);
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(1.7rem, 6vw, 2.3rem);
+    line-height: 1.05;
+    letter-spacing: .02em;
+    margin: 0 0 6px;
+    color: var(--sage-deep);
+  }
+  .sub { margin: 0 0 24px; color: var(--ink-soft); font-size: .9rem; line-height: 1.5; }
+
+  .output {
+    background: var(--field);
+    border: 2px solid var(--sage);
+    border-radius: 18px;
+    padding: 18px 16px;
+    min-height: 84px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  #password {
+    flex: 1;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: clamp(1.05rem, 4.2vw, 1.45rem);
+    letter-spacing: .04em;
+    word-break: break-all;
+    line-height: 1.35;
+    user-select: all;
+  }
+  .icon-btn {
+    flex: none;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--sage-deep);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font: 500 .85rem var(--font-mono);
+    cursor: pointer;
+  }
+  .icon-btn:hover { background: var(--mint); }
+
+  .meter { margin: 14px 0 26px; }
+  .bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .bar span { display: block; height: 100%; width: 0; border-radius: 99px; background: var(--weak); transition: width .3s, background .3s; }
+  .meter-label { display: flex; justify-content: space-between; margin-top: 8px; font-size: .8rem; color: var(--ink-soft); }
+
+  .row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  label, legend { font-weight: 500; font-size: .95rem; }
+  #lenOut { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; color: var(--sage-deep); }
+  input[type="range"] { width: 100%; accent-color: var(--sage); height: 28px; }
+
+  fieldset { border: 0; padding: 0; margin: 20px 0 26px; display: grid; gap: 10px; }
+  legend { padding: 0; margin-bottom: 10px; }
+  .opt {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--field);
+    cursor: pointer;
+    font-size: .9rem;
+  }
+  .opt input { width: 18px; height: 18px; accent-color: var(--sage); }
+  .opt small { margin-left: auto; color: var(--ink-soft); }
+  .opt.locked { opacity: .75; cursor: default; }
+
+  .generate {
+    width: 100%;
+    border: 0;
+    border-radius: 16px;
+    padding: 16px;
+    background: var(--sage-deep);
+    color: var(--cream);
+    font: 800 1.05rem var(--font-display);
+    letter-spacing: .04em;
+    cursor: pointer;
+  }
+  .generate:hover { background: var(--sage); }
+  .generate:active { transform: translateY(1px); }
+  :root[data-theme="dark"] .generate { color: #10201a; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .generate { color: #10201a; } }
+
+  button:focus-visible, input:focus-visible, .opt:focus-within { outline: 3px solid var(--orange); outline-offset: 2px; }
+
+  .toast {
+    min-height: 1.2em; margin: 12px 0 0; text-align: center;
+    font-size: .85rem; color: var(--ink-soft);
+  }
+  footer { margin-top: 18px; text-align: center; font-size: .78rem; color: var(--ink-soft); line-height: 1.5; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Random Password Generator</h1>
+  <p class="sub">Pick a length, choose what goes in, and get a complex password. Nothing leaves your browser.</p>
+
+  <div class="output">
+    <div id="password" aria-live="polite">Click Generate</div>
+    <button class="icon-btn" id="copy" type="button" aria-label="Copy password">Copy</button>
+  </div>
+
+  <div class="meter" aria-live="polite">
+    <div class="bar"><span id="barFill"></span></div>
+    <div class="meter-label"><span id="strength">Strength</span><span id="entropy"></span></div>
+  </div>
+
+  <div class="row">
+    <label for="length">Password length</label>
+    <output id="lenOut" for="length">12</output>
+  </div>
+  <input type="range" id="length" min="4" max="64" value="12">
+
+  <fieldset>
+    <legend>Characters to include</legend>
+    <label class="opt locked"><input type="checkbox" checked disabled> Letters <small>A–Z, a–z</small></label>
+    <label class="opt"><input type="checkbox" id="useDigits" checked> Numbers <small>0–9</small></label>
+    <label class="opt"><input type="checkbox" id="useSymbols" checked> Symbols <small>@#$%&amp;*</small></label>
+  </fieldset>
+
+  <button class="generate" id="generate" type="button">Generate password</button>
+  <p class="toast" id="toast" role="status"></p>
+
+  <footer>Decodelabs Project 3 &middot; Built with plain HTML, CSS and JavaScript</footer>
+</main>
+
+<script>
+(function () {
+  var LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  var DIGITS = "0123456789";
+  var SYMBOLS = "!@#$%^&*()-_=+[]{};:,.?";
+
+  var el = {
+    pw: document.getElementById("password"),
+    len: document.getElementById("length"),
+    lenOut: document.getElementById("lenOut"),
+    digits: document.getElementById("useDigits"),
+    symbols: document.getElementById("useSymbols"),
+    gen: document.getElementById("generate"),
+    copy: document.getElementById("copy"),
+    toast: document.getElementById("toast"),
+    bar: document.getElementById("barFill"),
+    strength: document.getElementById("strength"),
+    entropy: document.getElementById("entropy")
+  };
+
+  var current = "";
+  var toastTimer;
+
+  // Unbiased random integer in [0, max) using the browser's secure random source
+  function randInt(max) {
+    var limit = Math.floor(4294967296 / max) * max;
+    var buf = new Uint32Array(1);
+    do { crypto.getRandomValues(buf); } while (buf[0] >= limit);
+    return buf[0] % max;
+  }
+
+  function pick(str) { return str.charAt(randInt(str.length)); }
+
+  function generate(length, useDigits, useSymbols) {
+    var pool = LETTERS;
+    var chars = [pick(LETTERS)];            // at least one letter
+    if (useDigits)  { pool += DIGITS;  chars.push(pick(DIGITS)); }
+    if (useSymbols) { pool += SYMBOLS; chars.push(pick(SYMBOLS)); }
+    while (chars.length < length) chars.push(pick(pool));
+    // Fisher-Yates shuffle so guaranteed characters are not always first
+    for (var i = chars.length - 1; i > 0; i--) {
+      var j = randInt(i + 1);
+      var t = chars[i]; chars[i] = chars[j]; chars[j] = t;
+    }
+    return { text: chars.join("").slice(0, length), poolSize: pool.length };
+  }
+
+  function rate(length, poolSize) {
+    var bits = Math.round(length * Math.log2(poolSize));
+    var level = bits < 50 ? 0 : bits < 80 ? 1 : 2;
+    var names = ["Weak", "Medium", "Strong"];
+    var colors = ["var(--weak)", "var(--mid)", "var(--strong)"];
+    var width = Math.min(100, Math.round(bits / 1.2));
+    el.bar.style.width = width + "%";
+    el.bar.style.background = colors[level];
+    el.strength.textContent = "Strength: " + names[level];
+    el.entropy.textContent = "about " + bits + " bits";
+  }
+
+  // Short scramble animation, then settle on the real password
+  function reveal(finalText) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      el.pw.textContent = finalText; return;
+    }
+    var all = LETTERS + DIGITS + SYMBOLS;
+    var frame = 0, total = 10;
+    var timer = setInterval(function () {
+      frame++;
+      var settled = Math.floor((frame / total) * finalText.length);
+      var out = finalText.slice(0, settled);
+      for (var i = settled; i < finalText.length; i++) out += pick(all);
+      el.pw.textContent = out;
+      if (frame >= total) { clearInterval(timer); el.pw.textContent = finalText; }
+    }, 35);
+  }
+
+  function run() {
+    var length = parseInt(el.len.value, 10);
+    var r = generate(length, el.digits.checked, el.symbols.checked);
+    current = r.text;
+    reveal(current);
+    rate(length, r.poolSize);
+  }
+
+  function say(msg) {
+    el.toast.textContent = msg;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.toast.textContent = ""; }, 2200);
+  }
+
+  function copy() {
+    if (!current) { say("Generate a password first."); return; }
+    var done = function () { say("Copied to clipboard."); };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(current).then(done, fallback);
+    } else { fallback(); }
+    function fallback() {
+      var ta = document.createElement("textarea");
+      ta.value = current; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); done(); } catch (e) { say("Press Ctrl+C to copy."); }
+      document.body.removeChild(ta);
+    }
+  }
+
+  el.len.addEventListener("input", function () { el.lenOut.textContent = el.len.value; run(); });
+  el.digits.addEventListener("change", run);
+  el.symbols.addEventListener("change", run);
+  el.gen.addEventListener("click", run);
+  el.copy.addEventListener("click", copy);
+
+  run();
+})();
+</script>
+</body>
+</html>
