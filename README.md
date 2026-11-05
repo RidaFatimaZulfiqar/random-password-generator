@@ -7,7 +7,7 @@ A tool that asks for a password length and generates a random, complex password 
 - a **Python command-line program** (`password_generator.py`)
 - a **web app** (`index.html`) that runs entirely in the browser
 
-**Live demo:** `https://<your-username>.github.io/<repository-name>/`
+**Live demo:**   https://ridafatimazulfiqar.github.io/random-password-generator/
 
 ---
 
